@@ -24,6 +24,7 @@ mod mouse_state;
 mod tabs;
 mod terminfo;
 mod ui;
+mod widths;
 
 fn main() -> Result<()> {
     install_panic_hook();
@@ -40,12 +41,12 @@ fn main() -> Result<()> {
     // performs live stdio queries (DA1, Kitty graphics query, font-size query); reading any
     // other event first would corrupt that exchange.
 
-    // 4. Chunk 2: call widths::measure() here — after alt-screen entry, before keyboard-
-    // enhancement and mouse-capture setup, before any other event is read. It moves the cursor
-    // to a scratch line, prints each Unicode sample, queries `crossterm::cursor::position()` to
-    // get the terminal's own measured width, then clears the scratch line. `cursor::position()`
-    // has a built-in timeout, so a non-responding terminal degrades to "unmeasured" rather than
-    // hanging.
+    // 4. Unicode width probe — after alt-screen entry, before keyboard-enhancement and mouse-
+    // capture setup, before any other event is read. It moves the cursor to a scratch line,
+    // prints each Unicode sample, queries `crossterm::cursor::position()` to get the terminal's
+    // own measured width, then clears the scratch line. `cursor::position()` has a built-in
+    // timeout, so a non-responding terminal degrades to "unmeasured" rather than hanging.
+    let width_probe = widths::measure(&mut stdout);
 
     // 5. Keyboard enhancement (Kitty keyboard protocol), if supported.
     let keyboard_enhancement = crossterm::terminal::supports_keyboard_enhancement()?;
@@ -68,7 +69,7 @@ fn main() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = app::App::new(Some(keyboard_enhancement));
+    let mut app = app::App::new(Some(keyboard_enhancement), width_probe);
     let run_result = app::run(&mut terminal, &mut app);
 
     let teardown_result = teardown(terminal.backend_mut(), keyboard_enhancement);

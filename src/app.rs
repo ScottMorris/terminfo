@@ -19,6 +19,7 @@ use crate::mouse_state::MouseState;
 use crate::tabs::Tab;
 use crate::terminfo::TermInfo;
 use crate::ui;
+use crate::widths::WidthProbe;
 
 /// How long to block waiting for the next terminal event before redrawing anyway.
 const POLL_TICK: Duration = Duration::from_millis(250);
@@ -38,12 +39,16 @@ pub struct App {
     /// The on-screen column span of each tab title, as last rendered by the tab bar. Populated
     /// by the UI draw call each frame and read by the mouse-click handler to map clicks to tabs.
     pub tab_bar_regions: Vec<(Tab, Rect)>,
+    /// Real terminal-measured widths for the Unicode tab's sample strings, gathered by the
+    /// startup width probe (see `crate::widths`).
+    pub width_probe: WidthProbe,
 }
 
 impl App {
     /// Constructs a fresh `App`, gathering terminal facts. `keyboard_enhancement` reflects
-    /// whether the startup sequence successfully pushed keyboard enhancement flags.
-    pub fn new(keyboard_enhancement: Option<bool>) -> App {
+    /// whether the startup sequence successfully pushed keyboard enhancement flags. `width_probe`
+    /// is the result of the startup Unicode width probe (see `crate::widths::measure`).
+    pub fn new(keyboard_enhancement: Option<bool>, width_probe: WidthProbe) -> App {
         App {
             tab: Tab::Overview,
             should_quit: false,
@@ -51,6 +56,7 @@ impl App {
             input_log: InputLog::new(),
             mouse_state: MouseState::new(true),
             tab_bar_regions: Vec::new(),
+            width_probe,
         }
     }
 
