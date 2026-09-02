@@ -4,12 +4,13 @@
 // SPDX-License-Identifier: MIT
 
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
+use super::theme;
 use crate::app::App;
+use crate::tabs::Tab;
 
 pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
     let enhancement = match app.term_info.keyboard_enhancement {
@@ -24,13 +25,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
             "Keyboard enhancement flags pushed: {enhancement}  ({} event(s) logged, release events only visible when this is \"yes\")  —  'c' clears the log",
             app.input_log.len()
         ),
-        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        theme::header_style(theme::accent(Tab::Input)),
     ));
     lines.push(Line::from(""));
 
     if app.input_log.is_empty() {
-        lines.push(Line::from(
+        lines.push(Line::styled(
             "(no events yet — press a key or move the mouse)",
+            theme::muted_style(),
         ));
     } else {
         let available_rows = area.height.saturating_sub(lines.len() as u16) as usize;

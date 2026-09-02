@@ -4,28 +4,21 @@
 // SPDX-License-Identifier: MIT
 
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::Line;
-use ratatui::widgets::{Block, Borders, Paragraph};
+use ratatui::style::Style;
+use ratatui::text::{Line, Span};
+use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
+use super::theme;
 use crate::app::App;
+use crate::tabs::Tab;
+use crate::terminfo::ColourDepth;
 
 fn header(text: &str) -> Line<'static> {
     Line::styled(
         text.to_string(),
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
+        theme::header_style(theme::accent(Tab::Overview)),
     )
-}
-
-fn yes_no(value: bool) -> &'static str {
-    if value {
-        "yes"
-    } else {
-        "no"
-    }
 }
 
 fn or_unset(value: &Option<String>) -> String {
@@ -94,26 +87,31 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
 
     lines.push(Line::from(""));
     lines.push(header("Capabilities"));
-    lines.push(Line::from(format!(
-        "Colour depth: {} — {}",
-        ti.colour_depth.label(),
-        ti.colour_depth_reason
-    )));
-    lines.push(Line::from(format!(
-        "Keyboard enhancement (Kitty protocol): {}",
+    let depth_style = match ti.colour_depth {
+        ColourDepth::TrueColour => theme::positive_style(),
+        ColourDepth::Monochrome => theme::warning_style(),
+        ColourDepth::Ansi16 | ColourDepth::Xterm256 => Style::default(),
+    };
+    lines.push(Line::from(vec![
+        Span::raw("Colour depth: "),
+        Span::styled(ti.colour_depth.label(), depth_style),
+        Span::raw(format!(" — {}", ti.colour_depth_reason)),
+    ]));
+    lines.push(Line::from(vec![
+        Span::raw("Keyboard enhancement (Kitty protocol): "),
         match ti.keyboard_enhancement {
-            Some(v) => yes_no(v).to_string(),
-            None => "unknown".to_string(),
-        }
-    )));
-    lines.push(Line::from(
+            Some(v) => theme::yes_no_span(v),
+            None => Span::styled("unknown", Style::default()),
+        },
+    ]));
+    lines.push(Line::styled(
         "Graphics protocol: not yet detected (see Graphics tab)",
+        theme::muted_style(),
     ));
-    lines.push(Line::from(format!(
-        "Mouse capture: {}",
-        yes_no(ti.mouse_capture_enabled)
-    )));
+    lines.push(Line::from(vec![
+        Span::raw("Mouse capture: "),
+        theme::yes_no_span(ti.mouse_capture_enabled),
+    ]));
 
-    let block = Block::default().borders(Borders::NONE);
-    frame.render_widget(Paragraph::new(lines).block(block), area);
+    frame.render_widget(Paragraph::new(lines), area);
 }

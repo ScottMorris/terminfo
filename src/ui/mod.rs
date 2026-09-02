@@ -19,6 +19,7 @@ mod input;
 mod mouse;
 mod overview;
 mod tabs_bar;
+pub(crate) mod theme;
 mod unicode;
 
 /// Minimum usable terminal size, per SPEC.md's Layout section.
@@ -52,30 +53,49 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 }
 
 fn draw_body(frame: &mut Frame, area: Rect, app: &mut App) {
+    let accent = theme::accent(app.tab);
+    let block = theme::frame_block(app.tab.title(), accent);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
     match app.tab {
-        Tab::Overview => overview::draw(frame, area, app),
-        Tab::Colours => colours::draw(frame, area, app),
-        Tab::Attributes => attributes::draw(frame, area, app),
-        Tab::Unicode => unicode::draw(frame, area, app),
-        Tab::Input => input::draw(frame, area, app),
-        Tab::Mouse => mouse::draw(frame, area, app),
-        Tab::Graphics => graphics::draw(frame, area, app),
+        Tab::Overview => overview::draw(frame, inner, app),
+        Tab::Colours => colours::draw(frame, inner, app),
+        Tab::Attributes => attributes::draw(frame, inner, app),
+        Tab::Unicode => unicode::draw(frame, inner, app),
+        Tab::Input => input::draw(frame, inner, app),
+        Tab::Mouse => mouse::draw(frame, inner, app),
+        Tab::Graphics => graphics::draw(frame, inner, app),
     }
 }
 
+/// A key-hint span, styled to stand out, followed by a muted description span.
+fn hint_pair(key: &'static str, desc: &'static str) -> [Span<'static>; 2] {
+    [
+        Span::styled(key, theme::key_style()),
+        Span::styled(desc, theme::muted_style()),
+    ]
+}
+
 fn draw_hint(frame: &mut Frame, area: Rect, app: &App) {
-    let mut hint =
-        String::from("q/Esc/Ctrl+C Quit  Tab/Shift+Tab/h/l/1-7 Switch tabs  click/scroll tab bar");
+    let mut spans = Vec::new();
+    spans.extend(hint_pair("q/Esc/Ctrl+C", " Quit   "));
+    spans.extend(hint_pair("Tab/Shift+Tab/h/l/1-7", " Switch tabs   "));
+    spans.push(Span::styled("click/scroll tab bar", theme::muted_style()));
     match app.tab {
-        Tab::Input => hint.push_str("  c Clear log"),
-        Tab::Graphics => hint.push_str("  g Artwork  p Protocol  r Regenerate"),
+        Tab::Input => {
+            spans.push(Span::styled("   ", theme::muted_style()));
+            spans.extend(hint_pair("c", " Clear log"));
+        }
+        Tab::Graphics => {
+            spans.push(Span::styled("   ", theme::muted_style()));
+            spans.extend(hint_pair("g", " Artwork "));
+            spans.extend(hint_pair("p", " Protocol "));
+            spans.extend(hint_pair("r", " Regenerate"));
+        }
         _ => {}
     }
-    let paragraph = Paragraph::new(Line::from(Span::styled(
-        hint,
-        Style::default().add_modifier(Modifier::DIM),
-    )));
-    frame.render_widget(paragraph, area);
+    frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
 /// Computes a `width`x`height` rect centred within `area`, clamped to fit. Used by the tabs

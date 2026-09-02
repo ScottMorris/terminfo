@@ -4,12 +4,13 @@
 // SPDX-License-Identifier: MIT
 
 use ratatui::layout::Rect;
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 use unicode_width::UnicodeWidthStr;
 
+use super::theme;
 use crate::app::App;
 use crate::tabs::Tab;
 
@@ -37,10 +38,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Vec<(Tab, Rect)> {
 
         let label = format!(" {} ", tab.title());
         let label_width = label.width() as u16;
+        let accent = theme::accent(tab);
         let style = if tab == app.tab {
-            Style::default().add_modifier(Modifier::REVERSED | Modifier::BOLD)
-        } else {
             Style::default()
+                .bg(accent)
+                .fg(Color::Black)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(accent)
         };
         spans.push(Span::styled(label, style));
 
