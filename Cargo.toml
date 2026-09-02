@@ -1,0 +1,16 @@
+[package]
+name = "terminfo"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+description = "A Ratatui TUI that inspects and displays live information about the terminal it runs in."
+
+[dependencies]
+anyhow = "1"
+crossterm = "0.29"
+ratatui = "0.30"
+unicode-width = "0.2"
+
+[profile.dev]
+opt-level = 1
