@@ -98,21 +98,6 @@ fn draw_hint(frame: &mut Frame, area: Rect, app: &App) {
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
-/// Computes a `width`x`height` rect centred within `area`, clamped to fit. Used by the tabs
-/// that are still placeholders in this chunk to centre their "coming soon" message.
-pub(crate) fn centred_rect(area: Rect, width: u16, height: u16) -> Rect {
-    let width = width.min(area.width);
-    let height = height.min(area.height);
-    let x = area.x + (area.width.saturating_sub(width)) / 2;
-    let y = area.y + (area.height.saturating_sub(height)) / 2;
-    Rect {
-        x,
-        y,
-        width,
-        height,
-    }
-}
-
 fn draw_too_small(frame: &mut Frame, area: Rect, app: &mut App) {
     // Leave room for the tab bar if there is any height left at all.
     if area.height > 1 {

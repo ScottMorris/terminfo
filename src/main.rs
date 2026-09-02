@@ -19,6 +19,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 
 mod app;
+mod graphics;
 mod input_log;
 mod mouse_state;
 mod tabs;
@@ -36,10 +37,11 @@ fn main() -> Result<()> {
     // 2. Alternate screen.
     execute!(stdout, EnterAlternateScreen)?;
 
-    // 3. Chunk 3: call graphics::detect() here — after alt-screen entry, strictly before any
-    // other terminal event is read. It runs `Picker::from_query_stdio()` (or equivalent), which
-    // performs live stdio queries (DA1, Kitty graphics query, font-size query); reading any
-    // other event first would corrupt that exchange.
+    // 3. Graphics-protocol detection — after alt-screen entry, strictly before any other
+    // terminal event is read. Runs `Picker::from_query_stdio()`, which performs live stdio
+    // queries (DA1, Kitty graphics query, font-size query); reading any other event first would
+    // corrupt that exchange.
+    let graphics_detection = graphics::detect();
 
     // 4. Unicode width probe — after alt-screen entry, before keyboard-enhancement and mouse-
     // capture setup, before any other event is read. It moves the cursor to a scratch line,
@@ -69,7 +71,7 @@ fn main() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = app::App::new(Some(keyboard_enhancement), width_probe);
+    let mut app = app::App::new(Some(keyboard_enhancement), width_probe, graphics_detection);
     let run_result = app::run(&mut terminal, &mut app);
 
     let teardown_result = teardown(terminal.backend_mut(), keyboard_enhancement);

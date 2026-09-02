@@ -51,7 +51,11 @@ cargo clippy -- -D warnings
 cargo fmt --check
 ```
 
-`TERMINFO_FORCE_PROTOCOL=halfblocks|sixel|kitty|iterm2 cargo run` overrides graphics protocol detection for testing (Graphics tab, landing in a later chunk).
+`TERMINFO_FORCE_PROTOCOL=halfblocks|sixel|kitty|iterm2 cargo run` overrides graphics protocol detection for testing.
+
+## How graphics-protocol detection works
+
+At startup, right after entering the alternate screen and strictly before any other terminal input is read, `terminfo` runs [`ratatui-image`](https://github.com/ratatui/ratatui-image)'s `Picker::from_query_stdio()`. This writes a handful of escape sequences (a Kitty graphics query, a Device Attributes report, a font-size query) and reads the terminal's replies to work out which graphics protocol — Kitty, iTerm2, Sixel, or Unicode half-blocks — the terminal actually supports, along with its font-cell size in pixels. If the query fails, times out, or stdin isn't a tty, detection falls back to `Picker::halfblocks()`, which always works. Set `TERMINFO_FORCE_PROTOCOL` (`halfblocks`, `sixel`, `kitty`, or `iterm2`) to skip organic detection and force a specific protocol instead, useful for comparing how the same procedural image looks under each one; the Graphics tab's info panel notes when this override is active. The `p` key on the Graphics tab also cycles protocols live, at runtime, for the same kind of comparison.
 
 See `SPEC.md` for the full behavioural specification and `AGENTS.md`/`CLAUDE.md` for contribution conventions.
 

@@ -11,6 +11,7 @@ use ratatui::Frame;
 
 use super::theme;
 use crate::app::App;
+use crate::graphics;
 use crate::tabs::Tab;
 use crate::terminfo::ColourDepth;
 
@@ -104,10 +105,17 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
             None => Span::styled("unknown", Style::default()),
         },
     ]));
-    lines.push(Line::styled(
-        "Graphics protocol: not yet detected (see Graphics tab)",
-        theme::muted_style(),
-    ));
+    lines.push(Line::from(vec![
+        Span::raw("Graphics protocol: "),
+        Span::styled(
+            graphics::protocol_label(app.graphics.protocol_type()),
+            theme::positive_style(),
+        ),
+        Span::styled(
+            " (see Graphics tab for detection detail)",
+            theme::muted_style(),
+        ),
+    ]));
     lines.push(Line::from(vec![
         Span::raw("Mouse capture: "),
         theme::yes_no_span(ti.mouse_capture_enabled),

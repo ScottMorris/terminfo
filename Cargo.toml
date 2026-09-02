@@ -9,7 +9,9 @@ description = "A Ratatui TUI that inspects and displays live information about t
 [dependencies]
 anyhow = "1"
 crossterm = "0.29"
+image = { version = "0.25", default-features = false, features = ["png"] }
 ratatui = "0.30"
+ratatui-image = { version = "11", default-features = false, features = ["crossterm"] }
 unicode-width = "0.2"
 
 [profile.dev]

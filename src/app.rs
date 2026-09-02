@@ -14,6 +14,7 @@ use ratatui::backend::Backend;
 use ratatui::layout::Rect;
 use ratatui::Terminal;
 
+use crate::graphics::{GraphicsDetection, GraphicsState};
 use crate::input_log::InputLog;
 use crate::mouse_state::MouseState;
 use crate::tabs::Tab;
@@ -42,13 +43,24 @@ pub struct App {
     /// Real terminal-measured widths for the Unicode tab's sample strings, gathered by the
     /// startup width probe (see `crate::widths`).
     pub width_probe: WidthProbe,
+    /// Graphics-protocol picker/state and procedural artwork, for the Graphics tab.
+    pub graphics: GraphicsState,
+    /// Set to request the event loop clear the terminal before the next draw, to avoid artefacts
+    /// left behind when the Graphics tab's `p` key switches protocol live.
+    pub needs_clear: bool,
 }
 
 impl App {
     /// Constructs a fresh `App`, gathering terminal facts. `keyboard_enhancement` reflects
     /// whether the startup sequence successfully pushed keyboard enhancement flags. `width_probe`
     /// is the result of the startup Unicode width probe (see `crate::widths::measure`).
-    pub fn new(keyboard_enhancement: Option<bool>, width_probe: WidthProbe) -> App {
+    /// `graphics_detection` is the result of the startup graphics-protocol detection (see
+    /// `crate::graphics::detect`).
+    pub fn new(
+        keyboard_enhancement: Option<bool>,
+        width_probe: WidthProbe,
+        graphics_detection: GraphicsDetection,
+    ) -> App {
         App {
             tab: Tab::Overview,
             should_quit: false,
@@ -57,6 +69,8 @@ impl App {
             mouse_state: MouseState::new(true),
             tab_bar_regions: Vec::new(),
             width_probe,
+            graphics: GraphicsState::new(graphics_detection),
+            needs_clear: false,
         }
     }
 
@@ -72,7 +86,15 @@ impl App {
         match event {
             Event::Key(key) => self.handle_key(key),
             Event::Mouse(mouse) => self.handle_mouse(mouse),
-            Event::Resize(_, _) => self.term_info.refresh_geometry(),
+            Event::Resize(_, _) => {
+                self.term_info.refresh_geometry();
+                // The Graphics tab's image regenerates automatically: `ui::graphics::draw` calls
+                // `GraphicsState::ensure_render` with the freshly resized image region's pixel
+                // size every frame, but `invalidate` forces a rebuild even if that size happens
+                // to land on the same value (e.g. a resize that changes rows but not the image
+                // region's pixel width).
+                self.graphics.invalidate();
+            }
             Event::FocusGained | Event::FocusLost | Event::Paste(_) => {}
         }
     }
@@ -120,10 +142,19 @@ impl App {
 
     /// Handles keys specific to the currently active tab.
     fn handle_tab_key(&mut self, key: KeyEvent) {
-        // Graphics tab keys (`g`, `p`, `r`) arrive in chunk 3, once the graphics module exists
-        // to act on them.
         if self.tab == Tab::Input && key.code == KeyCode::Char('c') {
             self.input_log.clear();
+        }
+        if self.tab == Tab::Graphics {
+            match key.code {
+                KeyCode::Char('g') => self.graphics.cycle_artwork(),
+                KeyCode::Char('r') => self.graphics.bump_phase(),
+                KeyCode::Char('p') => {
+                    self.graphics.cycle_protocol();
+                    self.needs_clear = true;
+                }
+                _ => {}
+            }
         }
     }
 
@@ -168,6 +199,10 @@ where
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     while !app.should_quit {
+        if app.needs_clear {
+            terminal.clear()?;
+            app.needs_clear = false;
+        }
         terminal.draw(|frame| ui::draw(frame, app))?;
 
         if event::poll(POLL_TICK)? {
