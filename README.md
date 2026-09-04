@@ -4,7 +4,7 @@
   <img src="assets/hero.svg" alt="terminfo — inspect the terminal you are running in. A tabbed Ratatui TUI showing colour depth, attributes, Unicode rendering, live mouse and keyboard input, and the detected graphics protocol." width="100%">
 </p>
 
-Every terminal lies to you a little — about its colours, its fonts, its mouse, what it can draw. `terminfo` is a small Ratatui TUI that stops guessing and asks: it inspects and displays real, live information about the terminal it is currently running in — identity, geometry, colour support, text attribute support, Unicode rendering, live keyboard/mouse input, and the terminal graphics protocol in use, with a procedurally generated colour image rendered through whichever graphics protocol is detected (Kitty, iTerm2, Sixel, or Unicode half-blocks).
+`terminfo` is a small Ratatui TUI that inspects and displays real, live information about the terminal it is currently running in — identity, geometry, colour support, text attribute support, Unicode rendering, live keyboard/mouse input, and the terminal graphics protocol in use, with a procedurally generated colour image rendered through whichever graphics protocol is detected (Kitty, iTerm2, Sixel, or Unicode half-blocks).
 
 A [Liminal HQ](https://github.com/liminal-hq) project: no config, no network, no assumptions — just what your terminal actually reports about itself, right now.
 
